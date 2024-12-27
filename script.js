@@ -6,55 +6,62 @@ document.getElementById("form").addEventListener("submit", (event) => {
 });
 let getData = async(url) => {
     try {
-        let api_connection = await fetch(url); 
-        let json_response = await api_connection.json();
-        console.log("Contection success");
-        return json_response;
+        let api_connection = await fetch(url);
+        return await api_connection.json();
     } catch (error){
         console.error(`Error fetching data ${error}`);
     }
 }
+let create = (tag, classId=null, text=null) =>{
+    if(!tag) return null;
+    const element=document.createElement(tag);
+    classId && element.classList.add(classId);
+    text && (element.textContent = text);
+    return element;
+}
+let listed = (data, label) => {
+    const listElement = document.createElement('li');
+    const strong= create('strong', null, data);
+    listElement.appendChild(strong);
+    const listLabel= document.createTextNode(` ${label}`);
+    listElement.appendChild(listLabel);
+    return listElement;
+}
 let setData = async(url) =>{
     try{
         let response = await getData(url);
-        const card=document.createElement('div');
-        card.classList.add('card');
+        let repos_data = await getData(`${url}/repos?sort=created&direction=desc&per_page=5`);
+
+        const card=create('div', 'card');
+        
         if(response.message=="Not Found"){
-            const h2 = document.createElement('h2');
-            h2.textContent = "No profile with this username";
+            const h2 = create('h2', null, "No profile with this username");
             card.appendChild(h2);
         }else{
-            const avatar = document.createElement('img');
-            avatar.classList.add('avatar');
+            const avatar = create('img', 'avatar');
             avatar.src = response.avatar_url;
             card.appendChild(avatar);
 
-            const user_info= document.createElement('div');
-            user_info.classList.add('user-info');
+            const userInfo= create('div', 'user-info');
 
-            const h2 = document.createElement('h2');
-            h2.textContent = (response.name || response.login);
-            user_info.appendChild(h2);
+            const h2 = create('h2', null, response.name || response.login);
+            userInfo.appendChild(h2);
 
             const bio = document.createTextNode(response.bio || "There is no bio");
-            user_info.appendChild(bio);
-
+            userInfo.appendChild(bio);
 
             const datas = document.createElement('ul');
-            datas.appendChild(list(response.followers, 'followers'));
-            datas.appendChild(list(response.following, 'following'));
-            datas.appendChild(list(response.public_repos, 'repos'));
-            user_info.appendChild(datas);
+            datas.appendChild(listed(response.followers, 'followers'));
+            datas.appendChild(listed(response.following, 'following'));
+            datas.appendChild(listed(response.public_repos, 'repos'));
+            userInfo.appendChild(datas);
 
-            let repos_data = await getData(`${response.repos_url}?sort=created&direction=desc&per_page=5`);
-            console.log(repos_data);
             const repos = document.createElement('ul');
-            repos_data.forEach(repo => {
-                let list= document.createElement('li');
-                list.classList.add('repo');
 
-                const link = document.createElement('a');
-                link.textContent = repo.name;
+            repos_data.forEach(repo => {
+                let list= create('li', 'repo');
+
+                const link = create('a', null, repo.name);
                 link.href = repo.html_url; 
                 link.target = "_blank";
                 link.rel = "noopener noreferrer";
@@ -62,22 +69,12 @@ let setData = async(url) =>{
                 list.appendChild(link);                
                 repos.appendChild(list);
             });
-            user_info.appendChild(repos);
-            card.appendChild(user_info);
+            userInfo.appendChild(repos);
+            card.appendChild(userInfo);
         }
-
         document.getElementById('main').innerHTML = "";
         document.getElementById('main').appendChild(card);
     }catch(error){
         console.error(`Error rendering data ${error}`);
     }
-}
-let list = (data, label) => {
-    const listElement = document.createElement('li');
-    const strong= document.createElement('strong');
-    strong.textContent = data;
-    listElement.appendChild(strong);
-    const listLabel= document.createTextNode(` ${label}`);
-    listElement.appendChild(listLabel);
-    return listElement;
 }
